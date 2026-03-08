@@ -189,16 +189,17 @@ mkdir -p "$WORKSPACE_DIR"
 echo ""
 echo "[1/6] Configuring placeholders..."
 
-find "$TEMPLATE_DIR" -type f \( -name "*.md" -o -name "*.json" -o -name "*.sh" -o -name "*.plist" -o -name "*.yaml" -o -name "*.yml" \) | while read file; do
-    sed -i '' \
-        -e "s|{{GITHUB_USER}}|$GITHUB_USER|g" \
-        -e "s|{{WORKSPACE_DIR}}|$WORKSPACE_DIR|g" \
-        -e "s|{{CLAUDE_PATH}}|$CLAUDE_PATH|g" \
-        -e "s|{{CLAUDE_PROJECT_SLUG}}|$CLAUDE_PROJECT_SLUG|g" \
-        -e "s|{{TIMEZONE_HOUR}}|$TIMEZONE_HOUR|g" \
-        -e "s|{{TIMEZONE_DESC}}|$TIMEZONE_DESC|g" \
-        -e "s|{{HOME_DIR}}|$HOME_DIR|g" \
+find "$TEMPLATE_DIR" -type f \( -name "*.md" -o -name "*.json" -o -name "*.sh" -o -name "*.plist" -o -name "*.yaml" -o -name "*.yml" \) -print0 | while IFS= read -r -d '' file; do
+    sed -i.bak \
+        -e "s|natali-maximenko|$GITHUB_USER|g" \
+        -e "s|/home/natalia/Github|$WORKSPACE_DIR|g" \
+        -e "s|claude|$CLAUDE_PATH|g" \
+        -e "s|-home-natalia-Github|$CLAUDE_PROJECT_SLUG|g" \
+        -e "s|4|$TIMEZONE_HOUR|g" \
+        -e "s|4:00 UTC|$TIMEZONE_DESC|g" \
+        -e "s|/home/natalia|$HOME_DIR|g" \
         "$file"
+    rm -f "${file}.bak"
 done
 
 echo "  Placeholders substituted."
