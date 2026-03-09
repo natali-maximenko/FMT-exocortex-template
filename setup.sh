@@ -331,7 +331,9 @@ else
             echo "    cd $MY_STRATEGY_DIR && gh repo create $GITHUB_USER/DS-strategy --private --source=. --push"
         fi
     else
-        echo "  WARN: seed/strategy/ template not found. Creating minimal DS-strategy."
+        echo "  ERROR: seed/strategy/ not found. DS-strategy will be incomplete."
+        echo "  Fix: re-clone the template and run setup.sh again."
+        echo "  Creating minimal structure as fallback..."
         mkdir -p "$MY_STRATEGY_DIR"/{current,inbox,archive/wp-contexts,docs,exocortex}
         cd "$MY_STRATEGY_DIR"
         git init
