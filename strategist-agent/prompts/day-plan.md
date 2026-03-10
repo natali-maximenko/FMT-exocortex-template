@@ -1,12 +1,12 @@
 Выполни сценарий Day Plan для роли Стратег (R1).
 
-> Source-of-truth: DP.AGENT.012-strategist (PACK-digital-platform). Алгоритм полностью описан ниже.
+Источник сценария: {{WORKSPACE_DIR}}/PACK-digital-platform/pack/digital-platform/02-domain-entities/DP.AGENT.012-strategist/scenarios/scheduled/02-day-plan.md
 
 ## Контекст
 
-- **HUB (личные планы):** /home/natalia/Github/DS-strategy/current/
-- **SPOKE (планы репо):** /home/natalia/Github/*/WORKPLAN.md
-- **MEMORY:** ~/.claude/projects/-home-natalia-Github/memory/MEMORY.md
+- **HUB (личные планы):** {{WORKSPACE_DIR}}/DS-strategy/current/
+- **SPOKE (планы репо):** {{WORKSPACE_DIR}}/*/WORKPLAN.md
+- **MEMORY:** ~/.claude/projects/{{CLAUDE_PROJECT_SLUG}}/memory/MEMORY.md
 
 ## Именование файлов в current/
 
@@ -23,24 +23,16 @@ DS-strategy/
 
 ## Алгоритм
 
-### 0. WakaTime — время работы вчера
-
-> Данные автоматически подставляются из WakaTime API (см. `{{WAKATIME_DAY}}`).
-> Включи эту секцию в DayPlan после заголовка, перед «Итоги вчера».
-> Если данных нет (0 secs) — напиши: «WakaTime: нет данных за вчера (трекинг терминала активен с 23 фев 2026)».
-
-{{WAKATIME_DAY}}
-
 ### 1. Итоги вчера (Стратег собирает сам)
 
 **Стратег ОБЯЗАН** собрать коммиты за вчерашний день самостоятельно:
 
 ```bash
-# Для КАЖДОГО репо в /home/natalia/Github/:
-git -C /home/natalia/Github/<repo> log --since="yesterday 00:00" --until="today 00:00" --oneline --no-merges
+# Для КАЖДОГО репо в {{WORKSPACE_DIR}}/:
+git -C {{WORKSPACE_DIR}}/<repo> log --since="yesterday 00:00" --until="today 00:00" --oneline --no-merges
 ```
 
-- Пройди по ВСЕМ репозиториям в `/home/natalia/Github/`
+- Пройди по ВСЕМ репозиториям в `{{WORKSPACE_DIR}}/`
 - Сгруппируй коммиты по репозиториям
 - Сопоставь коммиты с РП из недельного плана
 - Определи статус каждого затронутого РП: done / partial / not started
@@ -80,8 +72,7 @@ git -C /home/natalia/Github/<repo> log --since="yesterday 00:00" --until="today 
 ### 3. Контекст недели
 
 - Загрузи обновлённый WeekPlan
-- Рассчитай прогресс: done/total РП
-- **Бюджет (WakaTime):** Запроси `{{WAKATIME_WEEK}}` (или WakaTime API: `/users/current/summaries?start={Mon}&end={today}`). Суммируй `grand_total.total_seconds` за все дни → `Факт`. Формула: `Осталось = Бюджет_недели - Факт_WakaTime`. Бюджет недели берётся из WeekPlan (строка «Бюджет W{N}»)
+- Рассчитай прогресс: done/total РП, оставшийся бюджет
 - Учти carry-over из итогов вчера
 
 ### 3а. Контекстные файлы РП
@@ -90,6 +81,25 @@ git -C /home/natalia/Github/<repo> log --since="yesterday 00:00" --until="today 
 - Для каждого запланированного на сегодня РП — если есть соответствующий `WP-{N}*.md`:
   - Добавь в таблицу «План на сегодня» колонку «Контекст» со ссылкой на файл
   - В секцию «Рекомендация» включи: текущее состояние из context file, следующий шаг
+
+### 3c. Проверка незалитых коммитов бота (pilot → new-architecture)
+
+> **ВАЖНО:** Используй `git cherry`, а НЕ `git log A..B`. Cherry-pick создаёт новые SHA — `git log` считает их «отсутствующими», хотя содержимое идентичное. `git cherry` сравнивает по patch-id (содержимому).
+
+```bash
+# Коммиты на pilot, отсутствующие на prod (+ = реально отсутствует, - = уже cherry-picked)
+git -C {{WORKSPACE_DIR}}/DS-IT-systems/aist_pilot_bot cherry -v new-architecture pilot 2>/dev/null | grep '^\+'
+# Коммиты на prod, отсутствующие на pilot (обратное направление)
+git -C {{WORKSPACE_DIR}}/DS-IT-systems/aist_pilot_bot cherry -v pilot new-architecture 2>/dev/null | grep '^\+'
+```
+
+- Если есть коммиты с `+` в любом направлении → добавить в DayPlan секцию с ТОЧНЫМ числом:
+  ```
+  **🤖 Бот: рассинхрон веток:** N коммитов на pilot (не на prod), M коммитов на prod (не на pilot). Команда для синхронизации: «мержи на прод».
+  ```
+- Если коммитов с `+` нет → не включать секцию (ветки синхронизированы)
+
+> Сценарий merge: PROCESSES.md § 4.2. Merge выполняется ТОЛЬКО по команде пользователя.
 
 ### 3b. Inbox Triage (заметки за вчера)
 
@@ -177,15 +187,6 @@ agent: Стратег
 ### ❓ На решение
 - ...
 
-## 📝 Рекомендации в черновики
-- ...
-> Черновиков сейчас: N. Согласовать: ✅ создать / ❌ отклонить / 🔄 отложить
-
----
-
-## WakaTime: время работы вчера
-[секция из шага 0 — данные WakaTime]
-
 ---
 
 ## Итоги вчера (DD мес)
@@ -196,7 +197,7 @@ agent: Стратег
 ## Контекст недели W{N}
 **Прогресс:** X/Y РП done (N%)
 **Ключевые дедлайны:** [список]
-**Бюджет W{N}:** Nh | **Факт (WakaTime):** Xh Ym | **Осталось:** ~Zh
+**Осталось:** ~Nh из Nh
 
 ---
 
